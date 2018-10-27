@@ -1,6 +1,7 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib.dates as mdates
 import numpy as np
 import time
 import datetime
@@ -15,6 +16,7 @@ from keras.layers import Dropout
 from keras.models import model_from_json
 from keras.preprocessing import sequence
 from scipy import interp
+
 
 EXPERT_SCORE = 0.6
 TRAINING_FLAG = 0
@@ -134,22 +136,47 @@ for i in range(0,len(test_label[window_len:])):
   predictArr.append(pre)
   err.append(abs(label - pre))
 
+from matplotlib.dates import (YEARLY, DateFormatter,
+                              rrulewrapper, RRuleLocator, drange)
 # draw plot
-predict_date=pd.read_csv('data/date.csv')
 
+# tick every 5th easter
+rule = rrulewrapper(YEARLY, byweekday=1, interval=5)
+loc = RRuleLocator(rule)
+formatter = DateFormatter('%m/%d/%y')
+date1 = datetime.date(2018, 9,22)
+date2 = datetime.date(2018, 10, 30)
+delta = datetime.timedelta(days=1)
+
+dates = drange(date1, date2, delta)
+
+predict_date=pd.read_csv('data/date.csv')
+print(predict_date)
 fig, ax1 = plt.subplots(1,1)
-ax1.set_xticks([datetime.date(2018,i+1,1) for i in range(12)])
-ax1.set_xticklabels([datetime.date(2018,i+1,1).strftime('%b %d %Y')  for i in range(12)])
-ax1.plot(labelArr, label='Actual')
-ax1.plot(predict_date.tail(38)['date'].astype(datetime.datetime),
+
+
+ax1.plot(dates,
+		 (labelArr),
+		  label='Actual')
+ax1.plot(dates,
 		 (predictArr),
 		  label='Predicted')
+
+# ax1.plot(labelArr, label='Actual')
+# ax1.plot(predict_date.tail(38)['date'].astype(datetime.datetime),
+# 		 (predictArr),
+		  # label='Predicted')
 ax1.annotate('MAE: %.4f'%np.mean(err), 
 			 xy=(0.75, 0.9),  xycoords='axes fraction',
 			xytext=(0.75, 0.9), textcoords='axes fraction')
 ax1.set_title('Test Set: Single Timepoint Prediction',fontsize=13)
 ax1.set_ylabel('Bitcoin Price ($)',fontsize=12)
 ax1.legend(bbox_to_anchor=(0.1, 1), loc=2, borderaxespad=0., prop={'size': 14})
+
+ax1.xaxis.set_major_locator(loc)
+ax1.xaxis.set_major_formatter(formatter)
+ax1.xaxis.set_tick_params(rotation=10, labelsize=10)
+
 plt.show()
 
 
